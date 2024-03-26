@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Main Window</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Prevent scrolling */
+            position: relative; /* Set as reference for absolute positioning */
+            height: 100vh;
+            width: 100vw;
+        }
+        .top-section {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .big-displays {
+            display: flex;
+            justify-content: space-between;
+            width: 100vw;
+            padding: 0 20px;
+        }
+        .big-display {
+            font-size: 192px;
+            font-weight: bold;
+            flex: 1;
+            text-align: center;
+        }
+        .display-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .display-label {
+            font-size: 24px; /* Adjust as needed */
+            font-weight: bold;
+            margin-bottom: 10px; /* Space between the label and the big display */
+        }
+        .toggle-windows {
+            position: absolute;
+            display: block;
+            margin: 0 auto;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .bottom-section {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .graph {
+            flex: 1;
+            background-color: #f4f4f4;
+            margin: 20px;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .controls {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .directory-commands {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .flight-test-commands {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .command-section {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .command-section button {
+            margin-right: 10px;
+        }
+        #consoleDisplay {
+            width: 100%;
+            height: 80px;
+            overflow-y: auto; /* Allow vertical scrolling within the log */
+            resize: none; /* Prevent resizing of the textarea */
+        }
+        .sensor-inputs {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between; /* Optional: To space out the columns */
+        }
+        .input-section {
+            margin-bottom: 2px;
+            flex-basis: calc(50% - 10px); /* Subtracting potential padding or margins */
+        }
+        .input-section label {
+            display: inline-block;
+            width: 100px;
+            font-size: 13px;
+        }
+        .input-section input {
+            width: 100px;
+        }
+        .chart-container {
+            width: 80%;
+            max-height: 300px;
+            margin: auto;
+        }
+        .gps-displays {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0px; /* Add some space between this section and the chart below */
+        }
+        .gps-display, .hz-display {
+            font-size: 20px; /* You can adjust this font size */
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .gps-label, .hz-label {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="connectionLight" style="width: 100%; height: 20px; border-radius: 30%; background-color: red;"></div>
+    <div class="toggle-windows">
+        <button id="configButton">Open Configuration</button>
+        <button id="replayButton">Open Replay</button>
+    </div>
+    <div class="top-section">        
+        <div class="big-displays">
+            <div class="display-container">
+                <span class="display-label">SPEED (m/s)</span>
+                <span class="big-display" id="speedDisplay">0</span>
+            </div>
+            <div class="display-container">
+                <span class="display-label">AOA</span>
+                <span class="big-display" id="aoaDisplay">0</span>
+            </div>
+        </div>
+    </div>
+    <div class="bottom-section">
+        <div class="graph">
+            <div class="gps-displays">
+                <div class="gps-display">
+                    <span class="gps-label">GPS Speed:</span>
+                    <span id="gpsSpeedDisplay">0</span>
+                </div>
+                <div class="gps-display">
+                    <span class="gps-label">GPS Fix:</span>
+                    <span id="gpsFixDisplay">0</span>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="cpChart"></canvas>
+            </div>
+            <div class="sensor-inputs">
+                <div class="input-section">
+                    <label for="cpOption">CP</label>
+                    <input type="radio" name="displayMode" value="cp" id="cpOption" checked><br>
+                    <label for="rawOption">Raw</label>
+                    <input type="radio" name="displayMode" value="raw" id="rawOption">                    
+                </div>
+
+                <!-- Pitot Sensor Input -->
+                <div class="input-section">
+                    <label for="pitotInput">Pitot:</label>
+                    <input type="number" id="pitotInput" value="52">
+                </div>
+                
+                <!-- Top Surface Range Input -->
+                <div class="input-section">
+                    <label for="topRangeInput">Top:</label>
+                    <input type="text" id="topRangeInput" value="5:34">
+                </div>
+            
+                <!-- Bottom Surface Range Input -->
+                <div class="input-section">
+                    <label for="bottomRangeInput">Bottom:</label>
+                    <input type="text" id="bottomRangeInput" value="42:49">
+                </div>
+
+                <!-- Top Surface Coordinates Input -->
+                <div class="input-section">
+                    <label for="topCoordinatesInput">Top Coords:</label>
+                    <input type="text" id="topCoordinatesInput" value="0.001, 0.01, 0.04, 0.095, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.48, 0.50, 0.52, 0.54, 0.56, 0.58, 0.6, 0.62, 0.64, 0.66, 0.68, 0.7, 0.72, 0.74, 0.76, 0.78, 0.8, 0.82, 0.84">
+                </div>
+            
+                <!-- Bottom Surface Coordinates Input -->
+                <div class="input-section">
+                    <label for="bottomCoordinatesInput">Bottom Coords:</label>
+                    <input type="text" id="bottomCoordinatesInput" value="0.01, 0.04, 0.12, 0.25, 0.4, 0.55, 0.7, 0.85">
+                </div>
+            
+            </div>
+        </div>
+        
+        <!-- Controls Section -->
+        <div class="controls">
+
+            <div class="hz-display">
+                <span class="hz-label">RPi Hz:</span>
+                <span id="hzDisplay">0</span>
+            </div>
+
+            <!-- Directory Commands Container -->
+            <div class="directory-commands">
+
+                <!-- Make Directory Command -->
+                <div class="command-section">
+                    <button id="makeDirectory">Make Directory</button>
+                    <input type="text" id="dirNameInput" placeholder="Directory Name">
+                </div>
+
+                <!-- Select Directory Command -->
+                <div class="command-section">
+                    <button id="selectDirectory">Select Directory</button>
+                    <input type="text" id="selectDirInput" placeholder="Select Directory">
+                </div>
+
+                <!-- Calibrate Command -->
+                <div class="command-section">
+                    <button id="calibrate">Calibrate</button>
+                    <input type="number" id="numSamplesInput" placeholder="Number of Samples">
+                </div>
+            </div>
+
+            <!-- Calculate CG and SM Command -->
+            <!--
+            <div class="CG-commands">
+                <div class="command-section">
+                    <button id="calcCG">Calculate CG & SM</button>
+                </div>
+                <div class="command-section">
+                    <input type="number" id="FWInput" placeholder="FW">
+                    <input type="number" id="BLWInput" placeholder="BLW">
+                    <input type="number" id="BRWInput" placeholder="BRW">
+                </div>
+            </div>-->
+
+            <!-- Run Flight Test Command -->
+            <div class="flight-test-commands">
+                <div class="command-section">
+                    <button id="runFlightTest">Run Flight Test</button>
+                    <input type="number" id="sampleRateHz" placeholder="Sample Rate (Hz)">
+                </div>
+
+                <!-- Start Collection Command -->
+                <div class="command-section">
+                    <button id="startCollection">Start Collection</button>
+                    <button id="endCollection">End Collection</button>
+                    <button id="quitFlightTest">Quit Flight Test</button>
+                </div>
+            </div>
+            
+
+            <!-- Exit Program Command -->
+            <!--
+            <div class="command-section">
+                <button id="exitProgram">Exit Program</button>
+            </div> -->
+
+            <!-- Serial Input and Send Message -->
+            <div class="command-section">
+                <input type="text" id="serialInput" placeholder="Type your message here">
+                <button id="sendMessage">Send Message</button>
+            </div>
+
+            <!-- Serial Connection Log -->
+            <textarea id="consoleDisplay" readonly></textarea>
+
+        </div>
+
+    </div>
+    <script src="main.js"></script>
+</body>
+</html>

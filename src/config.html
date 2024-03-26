@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Configuration Window</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Prevent scrolling */
+            position: relative; /* Set as reference for absolute positioning */
+            height: 100vh;
+            width: 100vw;
+        }
+        .light {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: red; /* Default to red (disconnected) */
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .top-section {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .big-displays {
+            display: flex;
+            justify-content: space-between;
+            width: 100vw;
+            padding: 0 20px;
+        }
+        .big-display {
+            font-size: 100px;
+            font-weight: bold;
+            flex: 1;
+            text-align: center;
+        }
+        .display-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .display-label {
+            font-size: 20px; /* Adjust as needed */
+            font-weight: bold;
+            margin-bottom: 10px; /* Space between the label and the big display */
+        }
+    </style>
+</head>
+<body>
+    <select id="serialPortsDropdown"></select>
+    <label for="baudRate">Baud Rate:</label>
+    <select id="baudRate">
+        <option value="300">300</option>
+        <option value="1200">1200</option>
+        <option value="2400">2400</option>
+        <option value="4800">4800</option>
+        <option value="9600" selected>9600</option>
+        <option value="14400">14400</option>
+        <option value="19200">19200</option>
+        <option value="38400">38400</option>
+        <option value="57600">57600</option>
+        <option value="115200">115200</option>
+    </select>
+    <button id="connectButton">Connect</button>
+    <div id="connectionStatus">
+        <div id="statusLight" class="light"></div>
+        <span id="statusText">Disconnected</span>
+    </div>
+    <div class="top-section">        
+        <div class="big-displays">
+            <div class="display-container">
+                <span class="display-label">Sent: (bytes/s)</span>
+                <span class="big-display" id="sentDisplay">0</span>
+            </div>
+            <div class="display-container">
+                <span class="display-label">Received: (bytes/s)</span>
+                <span class="big-display" id="receiveDisplay">0</span>
+            </div>
+        </div>
+    </div>
+    <script src="config.js"></script>
+    
+</body>
+</html>

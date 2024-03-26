@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Replay Window</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Prevent scrolling */
+            position: relative; /* Set as reference for absolute positioning */
+            height: 100vh;
+            width: 100vw;
+            transition: background-color 0.5s ease; /* Smooth transition for background color change */
+        }
+        .questionable-data {
+            background-color: lightcoral; /* Light red color for questionable data */
+        }
+        .toggle-windows {
+            position: absolute;
+            display: block;
+            margin: 0 auto;
+            top: 0px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+        .top-section {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            
+        }
+        .big-displays {
+            display: flex;
+            justify-content: space-between;
+            width: 100vw;
+            padding: 0 20px;
+        }
+        .big-display {
+            font-size: 140px;
+            font-weight: bold;
+            flex: 1;
+            text-align: center;
+        }
+        .display-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .display-label {
+            font-size: 24px; /* Adjust as needed */
+            font-weight: bold;
+            margin-bottom: 10px; /* Space between the label and the big display */
+        }
+        .bottom-section {
+            position: absolute;
+            bottom: 10px;
+            height: 60%;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .graph {
+            flex: 1;
+            background-color: #f4f4f4;
+            margin: 20px;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .controls {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .sensor-inputs {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between; /* Optional: To space out the columns */
+        }
+        .input-section label {
+            display: inline-block;
+            width: 100px;
+            font-size: 13px;
+        }
+        .input-section input {
+            width: 100px;
+        }
+        .chart-container {
+            display: flex;
+            justify-content: center; /* Centers horizontally */
+            width: 80%;
+            height: 90%;
+            margin: auto;
+        }
+        .gps-displays {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0px; /* Add some space between this section and the chart below */
+        }
+        .small-display {
+            font-size: 20px; /* You can adjust this font size */
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .gps-label, .hz-label {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .slider-container {
+            position: absolute;
+            top: 32.5%;
+            display: flex;
+            justify-content: center;
+            width: 100%; /* Full width of the container */
+            padding: 10px; /* Optional padding for better visibility */
+        }
+        .slider {
+            width: 80%; /* Full width of its container */
+            -webkit-appearance: none; /* Override default appearance */
+            appearance: none;
+            height: 15px; /* Set a specific height */
+            background: #d3d3d3; /* Slider background */
+            outline: none; /* Remove the outline */
+            opacity: 0.7; /* Set the opacity (optional) */
+            -webkit-transition: .2s; /* Transition for smoother interaction */
+            transition: opacity .2s;
+        }
+        .slider:hover {
+            opacity: 1; /* Full opacity when hovered */
+        }
+        /* Customizations for the slider thumb */
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none; /* Override default appearance */
+            appearance: none;
+            width: 25px; /* Set width and height for the slider thumb */
+            height: 25px;
+            background: #b61414; /* Thumb color */
+            cursor: pointer; /* Cursor on hover */
+        }
+        .slider::-moz-range-thumb {
+            width: 25px; /* Width and height of the slider thumb */
+            height: 25px;
+            background: #4CAF50; /* Thumb color */
+            cursor: pointer; /* Cursor on hover */
+        }
+        .slider-value {
+            position: absolute;
+            bottom: 100%; /* Position it above the slider */
+            left: 50%; /* Center it */
+            transform: translateX(-50%); /* Adjust for exact centering */
+            display: none; /* Hide it initially */
+        }
+        .slider:hover + .slider-value {
+            display: block; /* Show the value when hovering over the slider */
+        }
+        .warning-light {
+            top: 50px;
+            position: absolute;
+            left:20%;
+            width: 60%;
+            height: 40px;
+            border-radius: 30%;
+            background-color: rgba(255,0,0,0.3);
+            display:none;
+        }
+        .toggle-switch {
+            opacity: 0; /* Start with toggle switches hidden */
+            transition: opacity 0.5s ease; /* Smooth transition for opacity */
+            position: absolute;
+            position: absolute;
+            /* Additional styling as needed */
+        }
+
+        .top-section:hover .toggle-switch {
+            opacity: 1; /* Make toggle switches visible */
+        }
+
+        .left-switch {
+            left: 7%; /* Adjust this value based on your layout */
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .right-switch {
+            right: 7%; /* Adjust this value based on your layout */
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* Hide radio buttons */
+        .toggle-switch input[type="radio"] {
+            display: none;
+        }
+
+        /* Style for the labels */
+        .toggle-switch label {
+            display: inline-block;
+            background-color: #f2f2f2;
+            color: #333;
+            padding: 5px 10px;
+            margin: 2px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100px; /* Set a fixed width */
+            text-align: center; /* Center the text */
+            box-sizing: border-box; /* Include padding and border in the width */
+        }
+
+        /* Style for the selected (checked) label */
+        .toggle-switch input[type="radio"]:checked + label {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class='warning-light' id="connectionLight" display="none"></div>
+    <div class="toggle-windows">
+        <button id="fileSelect">Manage DataSets</button>
+        <select id="dataset-select" class="dropdown">
+        </select>
+        <button id="start-button" disabled="true">Start</button>
+        <button id="stop-button" disabled="true">Stop</button>
+        <button id="datasetAnalysis">Analysis</button>
+        <button id="simpleView">Simple</button>
+    </div>
+    <div class="top-section">
+        <!-- Toggle Switches -->
+        <div class="toggle-switch left-switch" id="radioContainer1">
+            <input type="radio" name="reMode" value="v" id="vOption" checked>
+            <label for="vOption">Speed</label><br>
+            <input type="radio" name="reMode" value="re" id="reOption">
+            <label for="reOption">RE</label>
+        </div>        
+        <div class="big-displays">
+            <div class="display-container">
+                <span class="display-label" id="speedLabel">SPEED (m/s)</span>
+                <span class="big-display" id="speedDisplay">0</span>
+            </div>
+            <div class="display-container">  
+                <span class="display-label" id="aoaLabel">AOA</span>
+                <span class="big-display" id="aoaDisplay">0</span>
+            </div>
+        </div>
+        <div class="toggle-switch right-switch" id="radioContainer2">            
+            <input type="radio" name="aoaMode" value="aoa" id="aoaOption" checked>
+            <label for="aoaOption">AOA</label><br>            
+            <input type="radio" name="aoaMode" value="aaoa" id="aaoaOption">
+            <label for="aaoaOption">Adj. AOA</label>
+        </div>
+    </div>
+    <div class="slider-container">
+        <input type="range" id="dataToggleSlider" min="0" max="100" step="0.01" value="0" class="slider">
+        <span id="sliderValue" class="slider-value">0</span>
+    </div>   
+    <div class="bottom-section">
+        <div class="graph">
+            <div class="gps-displays">
+                <div>
+                    <label for="timeAverage">Average over (s):</label><br>
+                    <input name="timeAverage" type="number" value="0.250" max="2" min="0.1" step="0.01" id="timeAverage"> 
+                </div>
+                <div class="small-display">
+                    <span class="gps-label">GPS Speed:</span>
+                    <span id="gpsSpeedDisplay">0</span>
+                </div>
+                <div class="small-display">
+                    <span class="gps-label">GPS Fix:</span>
+                    <span id="gpsFixDisplay">0</span>
+                </div>
+                <div class="small-display">
+                    <span class="hz-label">RPi Hz:</span>
+                    <span id="hzDisplay">0</span>
+                </div>
+                <div class="sensor-inputs">
+                    <div class="input-section" id="radioContainer3">
+                        <label for="cpOption">CP</label>
+                        <input type="radio" name="displayMode" value="cp" id="cpOption" checked><br>
+                        <label for="rawOption">Raw</label>
+                        <input type="radio" name="displayMode" value="raw" id="rawOption">                    
+                    </div>
+                               
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="cpChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <script src="replay.js"></script>
+</body>
+</html>

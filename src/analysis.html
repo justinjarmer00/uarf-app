@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+
+    <title id="windowTitle">Analysis Window</title>
+    <!--
+    <style>
+        body {
+            background-color: #2b2b2b;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+
+        .button, .file, .dropdown, .custom-file-upload {
+            background-color: #4a4a4a;
+            color: #e0e0e0;
+            border-color: #4a4a4a;
+            margin: 3px;
+            padding: 3px;  /* adding some padding */
+            display: inline-block; /* required for margin to take effect */
+            max-width: 260px;
+        }
+
+        .file-upload-label {
+            cursor: pointer;
+        }
+
+        /* This style is to make the label text color light when the mouse hovers over the button. */
+        .custom-file-upload:hover .file-upload-label {
+            color: #ffffff;
+        }
+
+        #data-form {
+            margin-top: 20px;
+            border: 0px solid #ddd;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 20px;
+            background-color: #333333;
+            border-radius: 10px;
+        }
+
+        #data-form > div {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .range-inputs {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        #data-inspection-section input[type="number"] {
+            width: 50px;
+        }
+
+        .file-input, .number-input {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .file-input {
+            flex: 30%;
+        }
+
+        .number-input {
+            flex: 70%;
+        }
+
+        #data-form > div > div {
+            flex: 1;
+        }
+
+        #data-form > div > div:last-child {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+
+        #data-form input[type="number"] {
+            width: 60px;
+        }
+
+        #app-section {
+            width: 100%;
+            padding: 20px;
+        }
+
+        #data-inspection-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+        }
+
+        #data-inspection-section .column {
+            width: 48%; /* allowing some space between columns */
+        }
+
+        #data-inspection-section .column .data-dropdown {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        #data-inspection-section .column .plot {
+            width: 100%;
+            height: 300px; /* you may adjust this based on your requirements */
+            margin-bottom: 20px;
+        }
+
+        #data-inspection-section .column .index-range {
+            width: 100%;
+        }
+
+        #cp-plot-section {
+            width: 100%;
+        }
+
+        #cp-plot-section .plot {
+            width: 100%;
+            height: 800px; /* you may adjust this based on your requirements */
+        }
+
+        .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+        }
+
+        .switch input { 
+        opacity: 0;
+        width: 0;
+        height: 0;
+        }
+
+        .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        -webkit-transition: .4s;
+        transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #2196F3;
+        }
+
+        input:checked + .slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+
+        /* Rounded sliders */
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        #app-section {
+            max-width: 1000px;
+            margin: auto;
+        }
+    </style> -->
+</head>
+<body>
+    <div id="app-section">
+        <!-- Section 2 -->
+        <div id="data-inspection-section">
+            <div>
+                <!-- Velocity Plot -->
+                <div id="velocity-plot" class="plot">
+                    <!-- Plot will be created using Plotly.js -->
+                </div>
+
+                <!-- Alpha Plot -->
+                <div id="alpha-plot" class="plot">
+                    <!-- Plot will be created using Plotly.js -->
+                </div>
+
+                <div class="range-inputs">
+                    <label for="left" >Left</label>
+                    <label for="right" >Right</label>
+                </div>
+                <div class="range-inputs">
+                    <input id="left" type="number" placeholder="left" >
+                    <input id="right" type="number" placeholder="right" >
+                </div>
+                <div class="range-inputs">
+                    <input id="leftDis" type="number" placeholder="left" disabled="true">
+                    <input id="rightDis" type="number" placeholder="right" disabled="true">
+                </div>
+
+                <!-- Raw Pressure Plot -->
+                <div id="pressure-plot" class="plot">
+                    <!-- Plot will be created using Plotly.js -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3 -->
+        <div class="range-inputs">
+            <p>Error Bar Settings:</p>
+        </div>
+        <div class="range-inputs">
+            <label for="error-switch" >Error Bars (ON/OFF):</label>
+            <label class="switch">
+                <input type="checkbox" id="error-switch">
+                <span class="slider round"></span>
+            </label>
+            <label for="confidence" >Confidence (%):</label>
+            <input id="confidence" type="number" value="95" min="1" max="99">
+        </div>
+        <div id="cp-plot-section">
+            <!-- Coefficient of Pressure Plot -->
+            <div id="cp-plot" class="plot">
+                <!-- Plot will be created using Plotly.js -->
+            </div>
+        </div>
+
+        <!-- Section 4 -->
+        <h2>Sensor Analysis</h2>
+        <div id="data-inspection-section">
+            <div>
+                <!-- Standard Deviation Top -->
+                <div id="stDevTop-plot" class="plot">
+                    <!-- Plot will be created using Plotly.js -->
+                </div>
+
+                <!-- Standard Deviation bottom -->
+                <div id="stDevBot-plot" class="plot">
+                    <!-- Plot will be created using Plotly.js -->
+                </div>
+                
+                <!-- Dropdown -->
+                <label>Select Sensor: </label>
+                <select id="data-select"  class="dropdown">
+                    <option value="empty">select</option>
+                    <!-- Options will be populated dynamically using JS -->
+                </select>
+
+                <!-- Time series plot -->
+                <div id="tSeries-plot" class="plot">
+                    <!-- Plot will be created using Plotly.js -->
+                </div>
+
+                <!-- Histogram plot -->
+                <label >Bins Mode:</label>
+                <select id="bins-mode-select"  class="dropdown">
+                    <option value= "true"> auto bins</option>
+                    <option value= "false"> manual bins</option>
+                </select>
+
+                <label>Number of Bins: </label>
+                <input id="bins-input" type="number" min="1" max="50" value="5">
+
+                <div id="hist-plot" class="plot">
+                    <!-- Plot will be created using Plotly.js -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="plotly-2.27.0.min.js" charset="utf-8"></script>
+    <script src="jStat.js"></script>
+    <script src="analysis.js"></script>
+</body>
+</html>

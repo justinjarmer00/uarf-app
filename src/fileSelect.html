@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>File Select</title>
+    <style>
+body {
+  background-color: #2b2b2b;
+  color: #e0e0e0;
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  max-width: 800px;
+  margin: auto;
+}
+
+.button, .file, .dropdown, .custom-file-upload {
+  background-color: #4a4a4a;
+  color: #e0e0e0;
+  border-color: #4a4a4a;
+  margin: 3px;
+  padding: 3px;  /* adding some padding */
+  display: inline-block; /* required for margin to take effect */
+  max-width: 260px;
+}
+
+.file-upload-label {
+  cursor: pointer;
+}
+
+/* This style is to make the label text color light when the mouse hovers over the button. */
+.custom-file-upload:hover .file-upload-label {
+  color: #ffffff;
+}
+
+#data-form {
+  margin-top: 20px;
+  border: 0px solid #ddd;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 20px;
+  background-color: #333333;
+  border-radius: 10px;
+}
+
+#data-form > div {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.range-inputs {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+#data-inspection-section input[type="number"] {
+  width: 50px;
+}
+
+.file-input, .number-input {
+display: flex;
+flex-direction: column;
+}
+
+.file-input {
+flex: 30%;
+}
+
+.number-input {
+flex: 70%;
+}
+
+#data-form > div > div {
+  flex: 1;
+}
+
+#data-form > div > div:last-child {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+
+#data-form input[type="number"] {
+  width: 60px;
+}
+
+    </style>
+</head>
+<body> 
+<button type="button" id="commit-button" class="button">Commit Changes</button>
+<form id="data-form">
+    <select id="dataset-select" class="dropdown">
+        <option value="new">New Dataset</option>
+    </select>
+    <button type="button" id="create-update-button" class="button">Create Dataset</button>
+    <button type="button" id="discard-delete-button" class="button">Discard</button>
+    <button type="button" id="save-dataSet" class="button">Save DataSet</button>
+    <div class="custom-file-upload" id="custom-file-upload-div">
+        <label for="load-dataSet" class="file-upload-label">Load DataSet(s)</label>
+        <input type="file" id="load-dataSet" multiple style="display: none" />                
+    </div>
+    
+    
+    <!-- Meta Data -->
+    <div>
+        <input id="nickname" type="text" placeholder="Nickname" class="meta-inputs">
+    </div>
+    <div>
+        <label for="wign-sweep">Wing Sweep (degrees):</label>
+        <label for="air-pressure">Air Pressure (Pa):</label>
+        <label for="air-temperature">Air Temperature (C):</label>
+        <label for="cord-length">Cord length (m):</label>
+        <label for="unit-conversion">Unit Conversion (to Pa):</label>
+    </div>
+    <div>
+        <input id="wing-sweep" type="number" placeholder="Wing Sweep" class="meta-inputs" value="35">
+        <input id="air-pressure" type="number" placeholder="Air Pressure" class="meta-inputs" value="101500">
+        <input id="air-temperature" type="number" placeholder="Air Temperature" class="meta-inputs" value="21.1">
+        <input id="cord-length" type="number" placeholder="Cord Length (m)" class="meta-inputs" value="0.305">
+        <input id="unit-conversion" type="number" class="meta-inputs" value="0.24909">
+    </div>
+    <br>
+    <!-- Main Data File Submission -->
+    <div>
+        <div class="file-input">
+        <label for="main-data-file" >Main Data File: </label>
+        <input id="main-data-file" type="file" class="file">
+        </div>
+        <div class="number-input">
+            <div>
+                <label for="groupTOPRangeInput">Enter top range:</label>
+                <input type="text" id="groupTOPRangeInput" name="groupTOPRangeInput" value="5:34">
+            </div>
+            <div>
+                <label for="groupBOTTOMRangeInput">Enter bottom range:</label>
+                <input type="text" id="groupBOTTOMRangeInput" name="groupBOTTOMRangeInput" value="42:49">
+            </div>
+            <div>
+                <label for="groupPPRangeInput">Enter pitot sensor:</label>
+                <input type="text" id="groupPPRangeInput" name="groupPPRangeInput" value="52">
+            </div>
+        </div>
+    </div>
+    <!-- Optional Pressure Calibration File Submission -->
+    <div>
+        <div>
+        <label for="pressure-calibration-file">Calibration File: (optional)</label>
+        <input id="pressure-calibration-file" type="file" class="file">
+        </div>
+        <div>
+            <div>
+                <label for="cali-row">Calibration row: </label>
+                <input id="cali-row" type="number" class="cali-row" value="0">
+            </div>
+        </div>
+    </div>
+    <!-- Coordinates File Submission -->
+    <div>
+        <div>
+        <label for="coordinates-file">Coordinates File: </label>
+        <input id="coordinates-file" type="file" class="file">
+        </div>
+        <div>
+            <div>
+                <label for="coordTOPRangeInput">Enter top range:</label>
+                <input type="text" id="coordTOPRangeInput" name="coordTOPRangeInput" value="5:34">
+            </div>
+            <div>
+                <label for="coordBOTTOMRangeInput">Enter bottom range:</label>
+                <input type="text" id="coordBOTTOMRangeInput" name="coordBOTTOMRangeInput" value="42:49">
+            </div>
+            <div>
+                <label for="coordinates-row">Coordinates row: </label>
+                <input id="coordinates-row" type="number" class="coordinates-row" value="0">
+            </div>
+        </div>
+    </div>
+</form>
+<script src="fileSelect.js"></script>
+</body>
+</html>
