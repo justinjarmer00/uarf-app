@@ -1,4 +1,5 @@
 let dataSets = [];
+let last_DATASETLOADED = null;
 
 window.ipc.on('initialize-dataSets', (data) => {
     console.log(data)
@@ -47,6 +48,39 @@ class DataSet {
         document.body.removeChild(element);
     }
 }
+
+class Data_ID_pair {
+    constructor(id, dataset) {
+        this.id = id
+        this.dataset = dataset
+    }
+}
+
+// Full dataset operations
+function requestFullDataset(datasetId) {
+    window.ipc.send('request-dataset', datasetId);
+}
+
+window.ipc.on('dataset-response', (dataset) => {
+    console.log('Full dataset received:', dataset);
+    last_DATASETLOADED = dataset
+    loadDataSet(dataset);
+});
+
+function updateDataset(dataset, datasetId) {
+    let pair = new Data_ID_pair(datasetId, dataset)
+    console.log('Sending dataset with ID:',pair);
+    window.ipc.send('update-dataset', pair);//, {"id": datasetId});
+}
+
+function addDataset(newDataset) {
+    window.ipc.send('add-dataset', newDataset);
+}
+
+function deleteDataset(datasetId) {
+    window.ipc.send('delete-dataset', datasetId);
+}
+
 
 class Sensor {
     constructor(title, array, time, index, xpos, calibration, conversion) {
@@ -263,6 +297,7 @@ function autoProcessFiles(dataSet, mainFileContents, coordsFileContents, caliFil
         let sensor = new Sensor(sensorTitle, sensorData, time, "N/A", "N/A", calibration);
         
         dataSet.sensors.push(sensor);
+        console.log('auto processed files');
     }
     
     let userInputTop = document.getElementById("groupTOPRangeInput").value;
@@ -339,9 +374,10 @@ async function processFiles(mainFile, coordsFile, caliFile, dataSet) {
     } catch(err) {
         console.log(err);
     }
+    console.log("processed Files");
 }
 
-function createDataSet() {
+async function createDataSet() {
     //Read Meta Data
     let name = document.getElementById("nickname").value;
     let wingSweep = parseFloat(document.getElementById("wing-sweep").value);
@@ -350,16 +386,16 @@ function createDataSet() {
     let cordLength = parseFloat(document.getElementById("cord-length").value);
 
     let dataSet = new DataSet(name, wingSweep, airPressure, airTemperature, cordLength);
-    
+    console.log(document.getElementById("main-data-file").disabled)
     if (!document.getElementById("main-data-file").disabled) {
         let mainFile = document.getElementById("main-data-file").files[0];
         let coordsFile = document.getElementById("coordinates-file").files[0];
         let caliFile = document.getElementById("pressure-calibration-file").files[0] ? document.getElementById("pressure-calibration-file").files[0] : null;
-        processFiles(mainFile, coordsFile, caliFile, dataSet);
+        await processFiles(mainFile, coordsFile, caliFile, dataSet);
     } else {
         const selectElement = document.getElementById('dataset-select');
-        const selectedValue = selectElement.value;
-        let dataSetOG = dataSets[selectedValue];
+        // const selectedValue = selectElement.value;
+        let dataSetOG = last_DATASETLOADED // dataSets[selectedValue];
         file1 = dataSetOG.mainFile;
         file2 = dataSetOG.coordFile;
         file3 = dataSetOG.caliFile;
@@ -368,6 +404,7 @@ function createDataSet() {
         dataSet.caliFile = file3;
         autoProcessFiles(dataSet, file1, file2, file3)
     }
+    console.log("finished creating dataset")
     return dataSet;
 }
 
@@ -441,15 +478,15 @@ function validateInputs() {
     return valid;
 }
 
-function addDataSet(dataSet) {
-    dataSets.push(dataSet);
-    updateDropdown('dataset-select');
-}
+// function addDataSet(dataSet) {
+//     dataSets.push(dataSet);
+//     updateDropdown('dataset-select');
+// }
   
-function removeDataSet(index) {
-    dataSets.splice(index, 1);
-    updateDropdown('dataset-select');
-}
+// function removeDataSet(index) {
+//     dataSets.splice(index, 1);
+//     updateDropdown('dataset-select');
+// }
 
 function loadDataSet(dataSet) {
     document.getElementById("coordinates-row").value = dataSet.rowCords
@@ -504,10 +541,11 @@ fileInput.addEventListener('change', () => {
             let file2 = dataSet.coordFile;
             let file3 = dataSet.caliFile;
             autoProcessFiles(dataSet, file1, file2, file3);
-            addDataSet(dataSet);
+            addDataset(dataSet);
+            // addDataSet(dataSet);
             console.log('Data set loaded and sensors rebuilt successfully.');
             console.log(dataSet); // you can inspect the resulting dataSet in the console
-            let dropdown = document.getElementById('dataset-select');
+            //let dropdown = document.getElementById('dataset-select');
             handleNext();
         };
 
@@ -554,7 +592,8 @@ function handleNext() {
         document.getElementById("save-dataSet").style.display = 'inline';
         document.getElementById("custom-file-upload-div").style.display = 'none';
         console.log(selectedValue)
-        loadDataSet(dataSets[selectedValue])
+        requestFullDataset(dataSets[selectedValue].id)
+        // loadDataSet(dataSets[selectedValue])
         // Show the form
         dataInputSection.style.display = 'block';
         
@@ -573,20 +612,22 @@ function handleDiscard() {
     document.getElementById("pressure-calibration-file").disabled = false;
     if (selectedValue === 'new'){
     } else {
-        removeDataSet(selectedValue);
+        deleteDataset(dataSets[selectedValue].id);
     }
 }
 
-function handleSubmit() {
+async function handleSubmit() {
     const selectElement = document.getElementById('dataset-select');
     const selectedValue = selectElement.value;
     if (selectedValue === 'new'){
         let valid = validateInputs();
         if (valid){
-            let newDataSet = createDataSet();
+            let newDataSet = await createDataSet();
             
+            console.log("sent new dataset")
             console.log(newDataSet);
-            addDataSet(newDataSet);
+            addDataset(newDataSet);
+            // addDataSet(newDataSet);
             //loadFiles(newDataSet);
         } else {
             console.log('invalid sumbmission: could not create data set')
@@ -594,10 +635,12 @@ function handleSubmit() {
     } else {
         let valid = validateInputs()
         if (valid){
-            let updatedDataSet = createDataSet();
-            removeDataSet(selectedValue);
-            console.log(updatedDataSet);
-            addDataSet(updatedDataSet);
+            let updatedDataSet = await createDataSet();
+            //console.log('calling updateDataset()')
+            updateDataset(updatedDataSet, dataSets[selectedValue].id);
+            // removeDataSet(selectedValue);
+            // console.log(updatedDataSet);
+            // addDataSet(updatedDataSet);
         } else {
             console.log('invalid submission: could not update data set')
         }
@@ -605,16 +648,17 @@ function handleSubmit() {
     handleNext();
 }
 
-function handleSave() {
+async function handleSave() {
     const selectElement = document.getElementById('dataset-select');
     const selectedValue = selectElement.value;
     let valid = validateInputs()
     if (valid){
-        let updatedDataSet = createDataSet();
-        removeDataSet(selectedValue);
+        let updatedDataSet = await createDataSet();
+        // removeDataSet(selectedValue);
         console.log(updatedDataSet);
-        addDataSet(updatedDataSet);            
+        // addDataSet(updatedDataSet);            
         updatedDataSet.saveToFile();
+        handleSubmit()
     } else {
         console.log('invalid submission: could not update data set')
     }

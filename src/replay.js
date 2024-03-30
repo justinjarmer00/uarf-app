@@ -8,6 +8,8 @@ let replayInterval;
 let running = false;
 let simple = false; //simplified view
 let interval = 100;
+let currentDataset = null;
+
 
 function updateSliderLabel(slider, label) {
     label.textContent = slider.value;
@@ -33,8 +35,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         //updates to show the infor at that time
         startTime = new Date();
-        let index = document.getElementById('dataset-select').value;
-        let dataset = dataSets[index];
+        // let index = document.getElementById('dataset-select').value;
+        // let dataset = dataSets[index];
+        let dataset = currentDataset
         countIndex = 0;
         playData(parseFloat(slider.value), dataset, countIndex)
     });
@@ -98,8 +101,9 @@ document.getElementById('fileSelect').addEventListener('click', () => {
 
 document.getElementById('radioContainer1').addEventListener('change', () => {
     const slider = document.getElementById('dataToggleSlider');
-    let index = document.getElementById('dataset-select').value;
-    let dataset = dataSets[index];
+    // let index = document.getElementById('dataset-select').value;
+    // let dataset = dataSets[index];
+    let dataset = currentDataset
     let initTime = slider.value;
     startTime = new Date();
     const countIndex = 0;
@@ -114,8 +118,9 @@ document.getElementById('radioContainer1').addEventListener('change', () => {
 })
 document.getElementById('radioContainer2').addEventListener('change', () => {
     const slider = document.getElementById('dataToggleSlider');
-    let index = document.getElementById('dataset-select').value;
-    let dataset = dataSets[index];
+    // let index = document.getElementById('dataset-select').value;
+    // let dataset = dataSets[index];
+    let dataset = currentDataset
     let initTime = slider.value;
     startTime = new Date();
     const countIndex = 0;
@@ -130,8 +135,9 @@ document.getElementById('radioContainer2').addEventListener('change', () => {
 })
 document.getElementById('radioContainer3').addEventListener('change', () => {
     const slider = document.getElementById('dataToggleSlider');
-    let index = document.getElementById('dataset-select').value;
-    let dataset = dataSets[index];
+    // let index = document.getElementById('dataset-select').value;
+    // let dataset = dataSets[index];
+    let dataset = currentDataset
     let initTime = slider.value;
     startTime = new Date();
     const countIndex = 0;
@@ -165,19 +171,51 @@ function handleChange() {
         document.getElementById('stop-button').disabled = true;
         document.getElementById('datasetAnalysis').disabled = false;
         
-        let index = document.getElementById('dataset-select').value;
-        let dataset = dataSets[index];
-        console.log(dataset)
-        let timeIndex = findIndexOfTitle(dataset.sensors, "time")
-        let array = dataset.sensors[timeIndex].array;
-        let lastDefinedValue = findLastDefinedValue(array);
-        var slider = document.getElementById('dataToggleSlider');
-        slider.max = lastDefinedValue;
+        // let index = document.getElementById('dataset-select').value;
+        // let dataset = dataSets[index];
+        // console.log(dataset)
+        // let timeIndex = findIndexOfTitle(dataset.sensors, "time")
+        // let array = dataset.sensors[timeIndex].array;
+        // let lastDefinedValue = findLastDefinedValue(array);
+        // var slider = document.getElementById('dataToggleSlider');
+        // slider.max = lastDefinedValue;
+
+        const index = document.getElementById('dataset-select').value;
+        if (index) {
+            // Send IPC message to load the full dataset
+            ipcRenderer.send('request-dataset', dataSets[index].id);
+        }
     } else {
         clearInterval(replayInterval);
         document.getElementById('start-button').disabled = true;
         document.getElementById('stop-button').disabled = true;
         document.getElementById('datasetAnalysis').disabled = true;
+    }
+}
+
+ipcRenderer.on('dataset-response', (event, dataset) => {
+    currentDataset = dataset;
+    console.log('Full dataset received:', currentDataset);
+    updateUIWithCurrentDataset(); // Function to update UI elements with the new dataset
+});
+
+
+function updateUIWithCurrentDataset() {
+    if (currentDataset) {
+        clearInterval(replayInterval);
+        // Update UI elements based on currentDataset
+        console.log(currentDataset.name);
+        // Other UI updates like sliders, charts, etc.
+        let dataset = currentDataset
+        console.log(dataset)
+        let timeIndex = findIndexOfTitle(dataset.sensors, "time")
+        // console.log(timeIndex)
+        let array = dataset.sensors[timeIndex].array;
+        // console.log(array)
+        let lastDefinedValue = findLastDefinedValue(array);
+        // console.log(lastDefinedValue)
+        var slider = document.getElementById('dataToggleSlider');
+        slider.max = lastDefinedValue;
     }
 }
 
@@ -214,8 +252,10 @@ function handleStart() {
     let initTime = slider.value;
     let countIndex = 0;
     startTime = new Date();
-    let index = document.getElementById('dataset-select').value;
-    let dataset = dataSets[index];
+    // let index = document.getElementById('dataset-select').value;
+    // let dataset = dataSets[index];
+    let dataset = currentDataset
+    
     running = true;
     replayInterval = setInterval(() => playData(initTime - interval/1000, dataset, countIndex), interval);
     document.getElementById('start-button').disabled = true;
@@ -376,7 +416,7 @@ function formatPressure(sensors, startIndex, endIndex) {
 
 function findLastDefinedValue(array) {
     for (let i = array.length - 1; i >= 0; i--) {
-        if (array[i] !== undefined) {
+        if (array[i] !== undefined && array[i] !== null) {
             return array[i];
         }
     }

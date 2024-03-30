@@ -6,6 +6,82 @@ const { SerialPort } = require('serialport');
 const { ReadlineParser } = require('@serialport/parser-readline');
 const msgpack = require('msgpack-lite');
 
+const sqlite3 = require('sqlite3').verbose();
+const db = new sqlite3.Database('profile.db', (err) => {
+  if (err) {
+    console.error('Error opening database', err.message);
+  } else {
+    console.log('Database connected!');
+  }
+});
+
+db.run(`CREATE TABLE IF NOT EXISTS config (
+    key TEXT PRIMARY KEY,
+    value TEXT
+)`, (err) => {
+    if (err) {
+        console.error('Error creating config table', err.message);
+    } else {
+        console.log('Config table created or already exists');
+    }
+});
+
+db.run(`CREATE TABLE IF NOT EXISTS datasets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    json TEXT
+)`, (err) => {
+    if (err) {
+        console.error('Error creating datasets table', err.message);
+    } else {
+        console.log('Datasets table created or already exists');
+    }
+});
+
+function saveConfig(key, value) {
+    db.run(`REPLACE INTO config (key, value) VALUES (?, ?)`, [key, value], (err) => {
+        if (err) {
+            console.error('Error saving config', err.message);
+        } else {
+            console.log(`Config saved: ${key} = ${value}`);
+        }
+    });
+}
+
+function saveDataSet(dataset) {
+    const dataString = JSON.stringify(dataset);
+    const name = dataset.name;
+
+    db.run(`INSERT INTO datasets (name, json) VALUES (?, ?)`, [name, dataString], (err) => {
+        if (err) {
+            console.error('Error saving dataset', err.message);
+        } else {
+            console.log('DataSet saved successfully');
+        }
+    });
+}
+
+function loadDataSetPlaceholders() {
+    db.all(`SELECT id, name FROM datasets`, [], (err, rows) => {
+        if (err) {
+            console.error('Error loading dataset placeholders', err.message);
+        } else {
+            dataSets = rows.map(row => ({ id: row.id, name: row.name }));
+            console.log('DataSet placeholders loaded:', dataSets);
+            // Update the renderer process, if necessary
+            if (mainWindow) {
+                mainWindow.webContents.send('update-dataset-placeholders', dataSets);
+            }
+            if (fileSelectWindow) {
+                fileSelectWindow.webContents.send('initialize-dataSets', dataSets);
+            }
+            if (replayWindow) {
+                replayWindow.webContents.send('update-datasets', dataSets);
+            }
+        }
+    });
+}
+
 let mainWindow;
 let configWindow;
 let replayWindow;
@@ -58,10 +134,111 @@ app.on('ready', () => {
         }
     });
     mainWindow.loadFile('src/main.html');
-    //mainWindow.webContents.openDevTools();
+
+    db.get(`SELECT value FROM config WHERE key = ?`, ['baudRate'], (err, row) => {
+        if (err) {
+            console.error('Error loading config', err.message);
+        } else if (row) {
+            configState.selectedBaudRate = row.value;
+            console.log(`Loaded config: baudRate = ${configState.selectedBaudRate}`);
+        }
+    });
+
+    // Load dataset placeholders
+    loadDataSetPlaceholders();    
+
     mainWindow.on('close', function() {
         app.quit();
     });
+});
+
+//dataset requests
+async function loadFullDataSet(datasetId) {
+    return new Promise((resolve, reject) => {
+        db.get(`SELECT json FROM datasets WHERE id = ?`, [datasetId], (err, row) => {
+            if (err) {
+                console.error('Error loading dataset:', err);
+                reject(err);
+            } else if (row) {
+                const dataset = JSON.parse(row.json);
+                console.log('sent dataset')
+                //console.log(dataset)
+                resolve(dataset);
+            } else {
+                console.log('sent null dataset')
+                resolve(null);
+            }
+        });
+    });
+}
+
+async function updateDataSet(pair) {
+    return new Promise((resolve, reject) => {
+        const dataString = JSON.stringify(pair.dataset);
+        console.log('dataset updated', pair.dataset.name)
+        db.run(`UPDATE datasets SET name = ?, json = ? WHERE id = ?`, [pair.dataset.name, dataString, pair.id], (err) => {
+            if (err) {
+                console.error('Error updating dataset:', err);
+                reject(err);
+            } else {
+                console.log('Update successful for', pair.dataset.name, pair.id);
+                // Load dataset placeholders after the update is successful
+                loadDataSetPlaceholders();
+                resolve();
+            }
+        });
+    });
+}
+
+async function addNewDataSet(newDataset) {
+    return new Promise((resolve, reject) => {
+        console.log('new data set added', newDataset.name)
+        const dataString = JSON.stringify(newDataset);
+        db.run(`INSERT INTO datasets (name, json) VALUES (?, ?)`, [newDataset.name, dataString], (err) => {
+            if (err) {
+                console.error('Error adding new dataset:', err);
+                reject(err);
+            } else {
+                resolve();
+            }
+            // Load dataset placeholders
+            loadDataSetPlaceholders();
+        });
+    });
+}
+
+async function deleteDataSet(datasetId) {
+    return new Promise((resolve, reject) => {
+        db.run(`DELETE FROM datasets WHERE id = ?`, [datasetId], (err) => {
+            if (err) {
+                console.error('Error deleting dataset:', err);
+                reject(err);
+            } else {
+                resolve();
+            }
+            // Load dataset placeholders
+            loadDataSetPlaceholders();
+        });
+    });
+}
+
+ipcMain.on('request-dataset', async (event, datasetId) => {
+    console.log(datasetId)
+    const dataset = await loadFullDataSet(datasetId);
+    event.reply('dataset-response', dataset);
+});
+
+ipcMain.on('update-dataset', async (event, pair) => {
+    console.log('Received dataset with ID:', pair.dataset.name);
+    await updateDataSet(pair);
+});
+
+ipcMain.on('add-dataset', async (event, newDataset) => {
+    await addNewDataSet(newDataset);
+});
+
+ipcMain.on('delete-dataset', async (event, datasetId) => {
+    await deleteDataSet(datasetId);
 });
 
 ipcMain.handle('get-serial-ports', async () => {
@@ -176,16 +353,26 @@ ipcMain.on('toggle-dataset-analysis-window', (event, data) => {
     });
     analysisWindow.loadFile('src/analysis.html');
     //fileSelectWindow.webContents.openDevTools();
-    analysisWindow.on('ready-to-show', () => {
-        let dataset = dataSets[index]
-        //console.log("Sending dataset:", dataset);
+
+    async function sendFull(index) {
+        let dataset = await loadFullDataSet(dataSets[index].id)
         analysisWindow.webContents.send('dataset', dataset);
+    };
+    
+    analysisWindow.on('ready-to-show', () => {
+        sendFull(index)
+        // let dataset = await loadFullDataSet(dataSets[index].id)
+        // //console.log("Sending dataset:", dataset);
+        // analysisWindow.webContents.send('dataset', dataset);
     });
 });
 
+
+
+
 ipcMain.on('connect-to-port', (event, data) => {
     const { port: selectedPort, baudRate: selectedBaudRate } = data;
-
+    saveConfig('baudRate', selectedBaudRate);
     console.log(selectedPort);
     console.log(selectedBaudRate);
 
@@ -281,5 +468,6 @@ ipcMain.on('send-serial-message', (event, message) => {
 
 ipcMain.on('update-datasets', (event, data) => {
     dataSets = data
+    saveDataSet(dataSets[0])
     replayWindow.webContents.send('update-datasets', dataSets);
 });
