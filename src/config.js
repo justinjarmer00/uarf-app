@@ -2,6 +2,11 @@ const selectedBaudRate = parseInt(document.getElementById('baudRate').value, 10)
 
 let isConnected = false;
 
+document.getElementById('refreshButton').addEventListener('click', () => {
+    loadSerialPorts(); // Reload the serial port list
+    // You can also refresh other configuration data here if necessary
+});
+
 async function loadSerialPorts() {
     const ports = await window.ipc.invoke('get-serial-ports');
     const dropdown = document.getElementById('serialPortsDropdown');

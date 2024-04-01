@@ -38,6 +38,13 @@ db.run(`CREATE TABLE IF NOT EXISTS datasets (
     }
 });
 
+db.run(`CREATE TABLE IF NOT EXISTS customDisplays (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    displayKey TEXT,
+    displayType TEXT
+)`);
+
+
 function saveConfig(key, value) {
     db.run(`REPLACE INTO config (key, value) VALUES (?, ?)`, [key, value], (err) => {
         if (err) {
@@ -84,6 +91,7 @@ function loadDataSetPlaceholders() {
 
 let mainWindow;
 let configWindow;
+let testingWindow;
 let replayWindow;
 let fileSelectWindow;
 // let interval;
@@ -222,6 +230,18 @@ async function deleteDataSet(datasetId) {
     });
 }
 
+function sendCustomDisplay(win) {
+    db.all(`SELECT * FROM customDisplays`, [], (err, rows) => {
+        if (err) {
+            console.error('Error fetching custom display configurations:', err);
+            return;
+        }
+        console.log('Sending custom display configurations:', rows); // Check the data
+        win.webContents.send('custom-display-configurations', rows);
+    });
+}
+
+
 ipcMain.on('request-dataset', async (event, datasetId) => {
     console.log(datasetId)
     const dataset = await loadFullDataSet(datasetId);
@@ -240,6 +260,27 @@ ipcMain.on('add-dataset', async (event, newDataset) => {
 ipcMain.on('delete-dataset', async (event, datasetId) => {
     await deleteDataSet(datasetId);
 });
+
+ipcMain.on('update-custom-display', (event, { quadrantId, displayKey, displayType }) => {
+    db.run(`
+        INSERT INTO customDisplays (id, displayKey, displayType) 
+        VALUES (?, ?, ?) 
+        ON CONFLICT(id) DO UPDATE SET 
+        displayKey = excluded.displayKey, 
+        displayType = excluded.displayType`,
+        [quadrantId, displayKey, displayType], function(err) {
+            if (err) {
+                console.error('Error updating custom display:', err);
+                return;
+            }
+            if (this.changes === 0) {
+                console.log(`No changes made to the custom display for quadrant ${quadrantId}`);
+            } else {
+                console.log(`Custom display updated for quadrant ${quadrantId}`);
+            }
+        });
+});
+
 
 ipcMain.handle('get-serial-ports', async () => {
   try {
@@ -278,6 +319,34 @@ ipcMain.on('toggle-config-window', () => {
           configWindow = null;
       });
   }
+});
+
+ipcMain.on('toggle-testing-window', () => {
+    if (testingWindow) {
+        testingWindow.close();
+        testingWindow = null;
+    } else {
+        testingWindow = new BrowserWindow({
+            width: 800,
+            height: 800,
+            webPreferences: {
+                /// preload: path.join(__dirname, 'preload.js'),
+                nodeIntegration: true,
+                contextIsolation: false
+            }
+        });
+        testingWindow.loadFile('src/testing.html');
+        //configWindow.webContents.openDevTools();
+  
+        testingWindow.on('ready-to-show', () => {
+          sendCustomDisplay(testingWindow);
+        });
+  
+        // Set the configWindow variable to null when the window is closed
+        testingWindow.on('closed', () => {
+            testingWindow = null;
+        });
+    }
 });
 
 ipcMain.on('toggle-replay-window', () => {
@@ -358,7 +427,7 @@ ipcMain.on('toggle-dataset-analysis-window', (event, data) => {
         let dataset = await loadFullDataSet(dataSets[index].id)
         analysisWindow.webContents.send('dataset', dataset);
     };
-    
+
     analysisWindow.on('ready-to-show', () => {
         sendFull(index)
         // let dataset = await loadFullDataSet(dataSets[index].id)
@@ -366,9 +435,6 @@ ipcMain.on('toggle-dataset-analysis-window', (event, data) => {
         // analysisWindow.webContents.send('dataset', dataset);
     });
 });
-
-
-
 
 ipcMain.on('connect-to-port', (event, data) => {
     const { port: selectedPort, baudRate: selectedBaudRate } = data;
@@ -404,6 +470,10 @@ ipcMain.on('connect-to-port', (event, data) => {
 
         // Send the received data to the renderer process
         mainWindow.webContents.send('serial-data', data);//receivedData);
+        if (testingWindow) {
+            testingWindow.webContents.send('serial-data', data);
+        }
+        
     })
 
     port.on('open', () => {

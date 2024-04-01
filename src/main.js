@@ -263,6 +263,10 @@ document.getElementById('replayButton').addEventListener('click', () => {
     ipcRenderer.send('toggle-replay-window');
 });
 
+document.getElementById('testingButton').addEventListener('click', () => {
+    ipcRenderer.send('toggle-testing-window');
+});
+
 // Event listener for the "Make Directory" button
 document.getElementById('makeDirectory').addEventListener('click', () => {
     const dirName = document.getElementById('dirNameInput').value;
