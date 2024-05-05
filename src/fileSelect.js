@@ -7,6 +7,52 @@ window.ipc.on('initialize-dataSets', (data) => {
     updateDropdown('dataset-select')
 });
 
+// Fetch and display presets
+window.ipc.send('request-presets');
+
+window.ipc.on('presets-response', (presets) => {
+    console.log('Presets received:', presets);
+    const dropdown = document.getElementById('presetSelect');
+    dropdown.innerHTML = presets.map(preset => `<option value="${preset.id}">${preset.name}</option>`).join('');
+});
+
+document.getElementById('managePresets').addEventListener('click', () => {
+    window.ipc.send('open-preset-manager');
+});
+
+document.getElementById('applyPreset').addEventListener('click', () => {
+    const selectedPresetId = document.getElementById('presetSelect').value;
+    window.ipc.send('request-preset', selectedPresetId);
+});
+
+window.ipc.on('preset-response', (preset) => {
+    if (preset) {
+        // Apply the preset parameters to the input fields
+        document.getElementById('wing-sweep').value = preset.wingSweep ;
+        document.getElementById('air-pressure').value = preset.airPressure ;
+        document.getElementById('air-temperature').value = preset.airTemperature ;
+        document.getElementById('cord-length').value = preset.cordLength ;
+        document.getElementById('unit-conversion').value = preset.unitConversion ;
+        document.getElementById('cali-row').value = preset.calibrationRow ;
+
+        // Handle range and coordinates inputs
+        document.getElementById('groupTOPRangeInput').value = preset.coordinatesTopRangeInput;
+        document.getElementById('groupBOTTOMRangeInput').value = preset.bottomRangeInput;
+        document.getElementById('groupPPRangeInput').value = preset.pitotInput;
+        
+        document.getElementById('coordTOPRangeInput').value = preset.coordinatesTopRangeInput;
+        document.getElementById('coordBOTTOMRangeInput').value = preset.coordinatesBottomRangeInput;
+        document.getElementById('coordinates-row').value = preset.coordinatesRow;
+
+        // You can also update the labels or any other related elements as needed
+        // Example: Update labels or display additional info
+        // document.getElementById('label-for-wing-sweep').textContent = "Wing Sweep (degrees): currently " + preset.wingSweep;
+    } else {
+        console.error('Preset could not be loaded or does not exist.');
+    }
+});
+
+
 class DataSet {
     constructor(name, wingSweep, airPressure, airTemperature, cordLength) {
       this.name = name;

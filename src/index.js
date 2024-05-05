@@ -1,6 +1,7 @@
 process.traceDeprecation = true;
 
 const { app, BrowserWindow, ipcMain, desktopCapturer } = require('electron');
+const fs = require('fs');
 const path = require('path');
 const { SerialPort } = require('serialport');
 const { ReadlineParser } = require('@serialport/parser-readline');
@@ -44,6 +45,76 @@ db.run(`CREATE TABLE IF NOT EXISTS customDisplays (
     displayType TEXT
 )`);
 
+db.run(`CREATE TABLE IF NOT EXISTS parsingPresets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE,
+    pitotInput TEXT,
+    topRangeInput TEXT,
+    bottomRangeInput TEXT,
+    topCoordinatesInput TEXT,
+    bottomCoordinatesInput TEXT,
+    wingSweep REAL,
+    airPressure INTEGER,
+    airTemperature REAL,
+    cordLength REAL,
+    unitConversion REAL,
+    calibrationRow INTEGER,
+    coordinatesTopRangeInput TEXT,
+    coordinatesBottomRangeInput TEXT,
+    coordinatesRow INTEGER
+)`);
+
+function seedDatabaseFromJSON() {
+    const jsonPath = path.join(__dirname, 'seeds/presets.json'); // Adjust the path as necessary
+    fs.readFile(jsonPath, 'utf8', (err, data) => {
+        if (err) {
+            console.error('Error reading JSON file for database seeding:', err);
+            return;
+        }
+        const presets = JSON.parse(data);
+        presets.forEach(preset => {
+            const insertSql = `INSERT OR IGNORE INTO parsingPresets (
+                name, 
+                pitotInput, 
+                topRangeInput, 
+                bottomRangeInput, 
+                topCoordinatesInput, 
+                bottomCoordinatesInput, 
+                wingSweep, 
+                airPressure, 
+                airTemperature, 
+                cordLength, 
+                unitConversion, 
+                calibrationRow, 
+                coordinatesTopRangeInput, 
+                coordinatesBottomRangeInput, 
+                coordinatesRow
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    
+            db.run(insertSql, [
+                preset.name, 
+                preset.pitotInput, 
+                preset.topRangeInput, 
+                preset.bottomRangeInput, 
+                preset.topCoordinatesInput, 
+                preset.bottomCoordinatesInput, 
+                preset.wingSweep, 
+                preset.airPressure, 
+                preset.airTemperature, 
+                preset.cordLength, 
+                preset.unitConversion, 
+                preset.calibrationRow, 
+                preset.coordinatesTopRangeInput, 
+                preset.coordinatesBottomRangeInput, 
+                preset.coordinatesRow
+            ], (err) => {
+                if (err) {
+                    console.error('Error inserting new preset:', err.message);
+                }
+            });
+        });
+    });
+}
 
 function saveConfig(key, value) {
     db.run(`REPLACE INTO config (key, value) VALUES (?, ?)`, [key, value], (err) => {
@@ -142,6 +213,7 @@ app.on('ready', () => {
         }
     });
     mainWindow.loadFile('src/main.html');
+    seedDatabaseFromJSON(); // Call the seeding function here
 
     db.get(`SELECT value FROM config WHERE key = ?`, ['baudRate'], (err, row) => {
         if (err) {
@@ -240,7 +312,6 @@ function sendCustomDisplay(win) {
         win.webContents.send('custom-display-configurations', rows);
     });
 }
-
 
 ipcMain.on('request-dataset', async (event, datasetId) => {
     console.log(datasetId)
@@ -540,4 +611,172 @@ ipcMain.on('update-datasets', (event, data) => {
     dataSets = data
     saveDataSet(dataSets[0])
     replayWindow.webContents.send('update-datasets', dataSets);
+});
+
+// Load presets for the dropdown
+ipcMain.on('request-presets', async (event) => {
+    db.all(`SELECT * FROM parsingPresets`, (err, rows) => {
+        if (err) {
+            console.error('Error fetching presets:', err);
+            event.reply('presets-response', []);
+        } else {
+            event.reply('presets-response', rows);
+        }
+    });
+});
+
+// Load a specific preset by id
+ipcMain.on('request-preset', (event, id) => {
+    db.get(`SELECT * FROM parsingPresets WHERE id = ?`, [id], (err, row) => {
+        if (err) {
+            console.error('Error fetching preset:', err);
+            event.reply('preset-response', null);
+        } else {
+            event.reply('preset-response', row);
+        }
+    });
+});
+
+// Manage Presets window
+ipcMain.on('open-preset-manager', () => {
+    const presetWindow = new BrowserWindow({
+        width: 700,
+        height: 800,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+        }
+    });
+    presetWindow.loadFile('src/presetManager.html'); // You need to create this HTML file for managing presets
+});
+
+ipcMain.on('get-presets', (event) => {
+    db.all('SELECT * FROM parsingPresets', (err, rows) => {
+        event.reply('send-presets', rows);
+    });
+});
+
+ipcMain.on('save-preset', (event, preset) => {
+    if (preset.id) {
+        // Update existing preset
+        const updateSql = `UPDATE parsingPresets SET 
+            name = ?, 
+            pitotInput = ?, 
+            topRangeInput = ?, 
+            bottomRangeInput = ?, 
+            topCoordinatesInput = ?, 
+            bottomCoordinatesInput = ?, 
+            wingSweep = ?, 
+            airPressure = ?, 
+            airTemperature = ?, 
+            cordLength = ?, 
+            unitConversion = ?, 
+            calibrationRow = ?, 
+            coordinatesTopRangeInput = ?, 
+            coordinatesBottomRangeInput = ?, 
+            coordinatesRow = ?
+            WHERE id = ?`;
+
+        db.run(updateSql, [
+            preset.name, 
+            preset.pitotInput, 
+            preset.topRangeInput, 
+            preset.bottomRangeInput, 
+            preset.topCoordinatesInput, 
+            preset.bottomCoordinatesInput, 
+            preset.wingSweep, 
+            preset.airPressure, 
+            preset.airTemperature, 
+            preset.cordLength, 
+            preset.unitConversion, 
+            preset.calibrationRow, 
+            preset.coordinatesTopRangeInput, 
+            preset.coordinatesBottomRangeInput, 
+            preset.coordinatesRow, 
+            preset.id
+        ], (err) => {
+            if (err) {
+                console.error('Error updating preset:', err.message);
+            }
+        });
+    } else {
+        // Insert new preset
+        const insertSql = `INSERT INTO parsingPresets (
+            name, 
+            pitotInput, 
+            topRangeInput, 
+            bottomRangeInput, 
+            topCoordinatesInput, 
+            bottomCoordinatesInput, 
+            wingSweep, 
+            airPressure, 
+            airTemperature, 
+            cordLength, 
+            unitConversion, 
+            calibrationRow, 
+            coordinatesTopRangeInput, 
+            coordinatesBottomRangeInput, 
+            coordinatesRow
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+        db.run(insertSql, [
+            preset.name, 
+            preset.pitotInput, 
+            preset.topRangeInput, 
+            preset.bottomRangeInput, 
+            preset.topCoordinatesInput, 
+            preset.bottomCoordinatesInput, 
+            preset.wingSweep, 
+            preset.airPressure, 
+            preset.airTemperature, 
+            preset.cordLength, 
+            preset.unitConversion, 
+            preset.calibrationRow, 
+            preset.coordinatesTopRangeInput, 
+            preset.coordinatesBottomRangeInput, 
+            preset.coordinatesRow
+        ], (err) => {
+            if (err) {
+                console.error('Error inserting new preset:', err.message);
+            }
+        });
+    }
+
+    // Refresh the presets in the manager after saving
+    refreshPresets(event);
+});
+
+function refreshPresets(event) {
+    db.all(`SELECT * FROM parsingPresets`, (err, rows) => {
+        if (err) {
+            console.error('Error fetching presets:', err);
+            event.reply('presets-response', []);
+        } else {
+            event.reply('presets-response', rows);
+            mainWindow.webContents.send('presets-response', rows);
+        }
+    });
+}
+
+
+ipcMain.on('load-preset', (event, presetId) => {
+    db.get(`SELECT * FROM parsingPresets WHERE id = ?`, [presetId], (err, row) => {
+        event.reply('load-preset-response', row);
+    });
+});
+
+ipcMain.on('delete-preset', (event, presetId) => {
+    db.run(`DELETE FROM parsingPresets WHERE id = ?`, [presetId], () => {
+        // After deletion, refresh the presets list
+        event.reply('get-presets');
+    });
+    // Forward new list to main renderer
+    db.all(`SELECT * FROM parsingPresets`, (err, rows) => {
+        if (err) {
+            console.error('Error fetching presets:', err);
+            mainWindow.webContents.send('presets-response', []);
+        } else {
+            mainWindow.webContents.send('presets-response', rows);
+        }
+    });
 });

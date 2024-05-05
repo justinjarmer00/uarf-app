@@ -92,6 +92,16 @@ flex: 70%;
   width: 60px;
 }
 
+#preset-management {
+    margin-top: 20px;
+    text-align: center;
+}
+
+#preset-management button, #preset-management select {
+    margin: 5px;
+}
+
+
     </style>
 </head>
 <body> 
@@ -184,6 +194,13 @@ flex: 70%;
         </div>
     </div>
 </form>
+<!-- Preset Management Section -->
+<div id="preset-management">
+  <button id="managePresets">Manage Presets</button>
+  <select id="presetSelect"></select>
+  <button id="applyPreset">Apply</button>
+</div>
+
 <script src="fileSelect.js"></script>
 </body>
 </html>

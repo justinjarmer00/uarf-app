@@ -1,0 +1,20 @@
+[
+    {
+      "name": "Default",
+      "pitotInput": "52",
+      "topRangeInput": "5:34",
+      "bottomRangeInput": "42:49",
+      "topCoordinatesInput": "0.001, 0.01, 0.04, 0.095, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.48, 0.50, 0.52, 0.54, 0.56, 0.58, 0.6, 0.62, 0.64, 0.66, 0.68, 0.7, 0.72, 0.74, 0.76, 0.78, 0.8, 0.82, 0.84",
+      "bottomCoordinatesInput": "0.01, 0.04, 0.12, 0.25, 0.4, 0.55, 0.7, 0.85",
+      "wingSweep": 35,
+      "airPressure": 101500,
+      "airTemperature": 21.1,
+      "cordLength": 0.305,
+      "unitConversion": 0.24909,
+      "calibrationRow": 0,
+      "coordinatesTopRangeInput": "5:34",
+      "coordinatesBottomRangeInput": "42:49",
+      "coordinatesRow": 0
+    }
+  ]
+  

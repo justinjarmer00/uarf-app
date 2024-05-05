@@ -208,6 +208,12 @@
                     <label for="bottomCoordinatesInput">Bottom Coords:</label>
                     <input type="text" id="bottomCoordinatesInput" value="0.01, 0.04, 0.12, 0.25, 0.4, 0.55, 0.7, 0.85">
                 </div>
+
+                <div class="input-section">
+                    <label for="presetSelect">Presets:</label>
+                    <select id="presetSelect"></select>
+                    <button id="managePresets">Manage Presets</button>
+                </div>              
             
             </div>
         </div>
@@ -284,7 +290,9 @@
             </div>
 
             <!-- Serial Connection Log -->
-            <textarea id="consoleDisplay" readonly></textarea>
+            <!-- <textarea id="consoleDisplay" readonly></textarea> -->
+
+            <div id="consoleDisplay" style="height: 80px; overflow-y: auto; background-color: #f3f3f3; border: 1px solid #ccc; padding: 5px; white-space: pre-wrap; font-family: monospace;" readonly></div>
 
         </div>
 

@@ -42,9 +42,16 @@ const chartConfig = {
 // Function to parse the sensor ranges
 function parseSensorRanges(input) {
     let sensors = [];
-    let ranges = input.split(',').map(range => range.trim());
+    let ranges = input.split(',').map(range => range.trim()).filter(range => range);  // Filter out empty strings;
     for (let range of ranges) {
-        let [start, end] = range.split(':').map(Number);
+        let parts = range.split(':').map(Number).filter(num => !isNaN(num));
+
+        if (parts.length === 1) {
+            parts.push(parts[0]);  // Make it a range of one if only one number is provided
+        }
+
+        let [start, end] = parts;
+
         if (start <= end) {
             for (let i = start; i <= end; i++) {
                 sensors.push(i - 1);  // Subtracting 1 to convert to 0-based index
@@ -60,6 +67,7 @@ function parseSensorRanges(input) {
 
 const cpChart = new Chart(ctx, chartConfig);
 
+// Function to update the console display with an error message
 function updateConsoleDisplayWithError(message) {
     const consoleDisplay = document.getElementById('consoleDisplay');
     consoleDisplay.innerHTML += `<span style="color: red;">${message}</span>\n`;
@@ -76,12 +84,20 @@ function updateAlphaDisplay(value) {
     document.getElementById('aoaDisplay').innerText = (value/10).toFixed(1); // Assuming you want to display 2 decimal places
 }
 
+// Function to update the console display with a message
 function updateConsoleDisplay(message) {
-    // Append the message to the console display
     const consoleElement = document.getElementById('consoleDisplay');
-    consoleElement.value += message + '\n'; // Append the message and a newline
-    consoleElement.scrollTop = consoleElement.scrollHeight; // Auto-scroll to the bottom
+    // Create a text node to escape any HTML and preserve text formatting
+    const textNode = document.createTextNode(message + '\n');
+    // Create a container for the text node
+    const messageContainer = document.createElement('div');
+    messageContainer.appendChild(textNode);
+    consoleElement.appendChild(messageContainer);
+    
+    // Auto-scroll to the bottom
+    consoleElement.scrollTop = consoleElement.scrollHeight;
 }
+
 
 let calibrationData = [];
 
@@ -230,6 +246,10 @@ function handleParsedData(data) {
     }
 }
 
+function loadPresets() {
+    ipcRenderer.send('request-presets');
+}
+
 let buffer = Buffer.alloc(0); // Use a Buffer instead of a string
 
 ipcRenderer.on('serial-data', (event, data) => {
@@ -254,6 +274,34 @@ ipcRenderer.on('serial-data', (event, data) => {
     }
 });
 
+ipcRenderer.on('presets-response', (event, presets) => {
+    const presetSelect = document.getElementById('presetSelect');
+    presetSelect.innerHTML = ''; // Clear existing options
+    presets.forEach(preset => {
+        const option = document.createElement('option');
+        option.value = preset.id;
+        option.textContent = preset.name;
+        presetSelect.appendChild(option);
+    });
+    const presetId = document.getElementById('presetSelect').value
+    ipcRenderer.send('load-preset', presetId);
+});
+
+ipcRenderer.on('load-preset-response', (event, preset) => {
+    if (preset) {
+        document.getElementById('pitotInput').value = preset.pitotInput;
+        document.getElementById('topRangeInput').value = preset.topRangeInput;
+        document.getElementById('bottomRangeInput').value = preset.bottomRangeInput;
+        document.getElementById('topCoordinatesInput').value = preset.topCoordinatesInput;
+        document.getElementById('bottomCoordinatesInput').value = preset.bottomCoordinatesInput;
+        // updateConsoleDisplayWithError(`pitotInput:\t${preset.pitotInput}\ntopRangeInput:\t${preset.topRangeInput}\nbottomRangeInput:\t${preset.bottomRangeInput}\ntopCoordinatesInput:\t${preset.topCoordinatesInput}\nbottomCoordinatesInput:\t${preset.bottomCoordinatesInput}`)
+    }
+});
+
+document.getElementById('presetSelect').addEventListener('change', () => {
+    const presetId = document.getElementById('presetSelect').value
+    ipcRenderer.send('load-preset', presetId);
+});
 
 document.getElementById('configButton').addEventListener('click', () => {
     ipcRenderer.send('toggle-config-window');
@@ -319,10 +367,17 @@ document.getElementById('sendMessage').addEventListener('click', () => {
     ipcRenderer.send('send-serial-message', message + '\n'); // Assuming newline is needed at the end
 });
 
+// Event listener for managing presets
+document.getElementById('managePresets').addEventListener('click', () => {
+    ipcRenderer.send('open-preset-manager');
+});
+
 // Start sending ping messages
 const pingInterval = setInterval(() => {
     const command = 'ping\n';
     ipcRenderer.send('send-serial-message', command);
 }, 500);  // Sending ping every .5 seconds
 
+// On load
 startConnectionCheck();
+loadPresets();

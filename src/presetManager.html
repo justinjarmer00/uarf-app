@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Presets</title>
+    <style>
+        body {
+            padding: 20px;
+        }
+        .preset-form {
+            margin-bottom: 20px;
+        }
+        .preset-form {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .column {
+            flex: 1;
+            padding: 0 10px;
+        }
+
+        .label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input {
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Manage Presets</h1>
+    <h3>Main Window (and Main File) Parsing:</h3>
+    <div class="preset-form">
+        <div class="column">
+            <label for="presetName">Preset Name</label>
+            <input type="text" id="presetName" placeholder="Example">
+            
+            <label for="pitotInput">Pitot Input</label>
+            <input type="text" id="pitotInput" placeholder="52">
+        </div>
+        
+        <div class="column">
+            <label for="topRangeInput">Top Range Input</label>
+            <input type="text" id="topRangeInput" placeholder="5:34">
+            
+            <label for="bottomRangeInput">Bottom Range Input</label>
+            <input type="text" id="bottomRangeInput" placeholder="42:49">
+        </div>
+        
+        <div class="column">
+            <label for="topCoordinatesInput">Top Coordinates Input</label>
+            <input type="text" id="topCoordinatesInput" placeholder="0.001, 0.01, 0.04, 0.095, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.48, 0.50, 0.52, 0.54, 0.56, 0.58, 0.6, 0.62, 0.64, 0.66, 0.68, 0.7, 0.72, 0.74, 0.76, 0.78, 0.8, 0.82, 0.84">
+            
+            <label for="bottomCoordinatesInput">Bottom Coordinates Input</label>
+            <input type="text" id="bottomCoordinatesInput" placeholder="0.01, 0.04, 0.12, 0.25, 0.4, 0.55, 0.7, 0.85">
+        </div>
+    </div>
+    <h3>Additional Dataset Parameters:</h3>
+    <div class="preset-form">
+        <div class="column">
+            <label for="wign-sweep">Wing Sweep (degrees):</label>
+            <input id="wing-sweep" type="number" placeholder="Wing Sweep" class="meta-inputs" placeholder="35">
+            <label for="air-pressure">Air Pressure (Pa):</label>
+            <input id="air-pressure" type="number" placeholder="Air Pressure" class="meta-inputs" placeholder="101500">
+            <label for="air-temperature">Air Temperature (C):</label>
+            <input id="air-temperature" type="number" placeholder="Air Temperature" class="meta-inputs" placeholder="21.1">
+            <label for="cord-length">Cord length (m):</label>
+            <input id="cord-length" type="number" placeholder="Cord Length (m)" class="meta-inputs" placeholder="0.305">
+            <label for="unit-conversion">Unit Conversion (to Pa):</label>
+            <input id="unit-conversion" type="number" class="meta-inputs" placeholder="0.24909">
+        </div>
+        
+        <div class="column">
+            <label for="cali-row">Calibration row: </label>
+            <input id="cali-row" type="number" class="cali-row" placeholder="0">
+        </div>
+        
+        <div class="column">
+            <label for="coordTOPRangeInput">Coordinates top range:</label>
+            <input type="text" id="coordTOPRangeInput" name="coordTOPRangeInput" placeholder="5:34">
+            <label for="coordBOTTOMRangeInput">Coordinates bottom range:</label>
+            <input type="text" id="coordBOTTOMRangeInput" name="coordBOTTOMRangeInput" placeholder="42:49">
+            <label for="coordinates-row">Coordinates row: </label>
+            <input id="coordinates-row" type="number" class="coordinates-row" placeholder="0">
+        </div>
+    </div>
+    <div>
+        <select id="presetsDropdown"></select>
+        <button id="deletePreset">Delete Preset</button>
+        <button id="savePreset">Save Preset</button>
+        <button id="saveAsNewPreset" disabled="true">Save as New Preset</button>
+    </div>
+
+    <div id="newPresetDialog" style="display:none;">
+        <input type="text" id="newPresetName" />
+        <button onclick="saveNewPreset()">Save</button>
+        <button onclick="closeNewPresetDialog()">Cancel</button>
+    </div>
+    
+
+    <div class="documentation">
+        <h2>"Range" Input Format</h2>
+        <p>The input should be a string containing range(s) of numbers.</p>
+        <ul>
+            <li>Ranges are defined by a start and an end index, separated by a colon <code>:</code>.</li>
+            <li>Multiple ranges can be included and should be separated by commas <code>,</code>.</li>
+            <li>The function supports both ascending and descending order of indices.</li>
+        </ul>
+    
+        <h3>Rules</h3>
+        <ul>
+            <li><strong>Ascending Range:</strong> For a range where the start index is less than or equal to the end index (<code>start:end</code>), the function generates indices from <code>start</code> to <code>end</code>, inclusive.</li>
+            <li><strong>Descending Range:</strong> For a range where the start index is greater than the end index (<code>start:end</code>), the function generates indices from <code>start</code> to <code>end</code>, decreasing.</li>
+            <li><strong>Zero-based Index:</strong> The function converts the indices into zero-based indices by subtracting 1 from each calculated index. The incoming pressure data is also converted to zerobase. Dont overthink this, if you want the first sensor in the array: enter 1</li>
+        </ul>
+    
+        <h3>Examples</h3>
+        <ul>
+            <li><strong>Input:</strong> "1:3" <br>
+                <strong>Output:</strong> [0, 1, 2] <br>
+                <strong>Explanation:</strong> Generates indices for 1, 2, and 3, then converts them to zero-based.</li>
+            <li><strong>Input:</strong> "3:1" <br>
+                <strong>Output:</strong> [2, 1, 0] <br>
+                <strong>Explanation:</strong> Generates indices for 3, 2, and 1 in descending order, then converts to zero-based.</li>
+            <li><strong>Input:</strong> "2,4:5" <br>
+                <strong>Output:</strong> [1, 3, 4] <br>
+                <strong>Explanation:</strong> Processes single index 2 and range 4 to 5, then converts to zero-based.</li>
+        </ul>
+        <h2>"Coordinates" Input Format</h2>
+        <p>The input should be a string of decimal numbers, each representing the x-coordinate of a pressure tap.</p>
+        <ul>
+            <li>Coordinates are separated by commas <code>,</code>.</li>
+            <li>The sequence of coordinates should match the sequence of sensor indices defined in the "Range" input.</li>
+        </ul>
+
+        <h3>Rules</h3>
+        <ul>
+            <li><strong>Ordering:</strong> The order of coordinates should directly correspond to the order of sensors in the range definition.</li>
+            <li><strong>Precision:</strong> Decimal numbers can be used to specify precise locations along the chord.</li>
+            <li><strong>Spacing:</strong> Coordinates can be evenly or unevenly spaced, depending on the physical layout of the pressure taps.</li>
+        </ul>
+
+        <h3>Examples</h3>
+        <ul>
+            <li><strong>Range Input:</strong> "1:3" <br>
+                <strong>Coordinates Input:</strong> "0.1, 0.2, 0.3" <br>
+                <strong>Explanation:</strong> The first sensor (0-based index 0) is at x-coordinate 0.1, the second at 0.2, and the third at 0.3.</li>
+            <li><strong>Range Input:</strong> "3:1" <br>
+                <strong>Coordinates Input:</strong> "0.1, 0.2, 0.3" <br>
+                <strong>Explanation:</strong> The third sensor (0-based index 2) is at x-coordinate 0.1, the second at 0.2, and the first at 0.3.</li>
+            <li><strong>Range Input:</strong> "1,3,5" <br>
+                <strong>Coordinates Input:</strong> "0.15, 0.35, 0.55" <br>
+                <strong>Explanation:</strong> The sensor at 0-based index 0 is at x-coordinate 0.15, the third (or index 2) at 0.35, and the fifth (index 4) at 0.55.</li>
+        </ul>
+    </div>
+    
+    <script src="presetManager.js"></script>
+</body>
+</html>
