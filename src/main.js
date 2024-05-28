@@ -210,6 +210,11 @@ function startConnectionCheck() {
     }, 700);  // Check every 10.5 seconds. This gives a 0.5 second buffer after the expected pong.
 }
 
+function updateConsoleDisplayWithEXTError(message) {
+    EXTmessage = "[EXT] " + message
+    updateConsoleDisplayWithError(EXTmessage);
+}
+
 function updateGpsSpeedDisplay(value) {
     // Update the GPS speed display with the given value
     document.getElementById('gpsSpeedDisplay').innerText = value;
@@ -229,6 +234,7 @@ const handlers = {
     p: updateSpeedDisplay,
     a: updateAlphaDisplay,
     console: updateConsoleDisplay,
+    merror: updateConsoleDisplayWithEXTError,
     pv: updatePressureData,
     calibration: updateCalibrationData,
     q: handlePongResponse,
