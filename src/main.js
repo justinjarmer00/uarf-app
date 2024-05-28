@@ -26,6 +26,7 @@ const chartConfig = {
     },
     options: {
         responsive: true,
+        maintainAspectRatio: false,
         scales: {
             x: {
                 beginAtZero: true
@@ -74,6 +75,11 @@ function updateConsoleDisplayWithError(message) {
     consoleDisplay.scrollTop = consoleDisplay.scrollHeight;  // Scroll to the bottom
 }
 
+function updateConsoleDisplayWithEXTError(message) {
+    EXTmessasge = "[EXT] " + message   
+    updateConsoleDisplayWithError(EXTmessasge)
+}
+
 function updateSpeedDisplay(value) {
     // Update the speed display with the given value
     document.getElementById('speedDisplay').innerText = (value/10).toFixed(1); // Assuming you want to display 2 decimal places
@@ -109,12 +115,12 @@ function updateCalibrationData(data) {
 function updatePressureData(pressureValues) {
     // Check calibration data and adjust pressureValues if necessary
     if (calibrationData.length === 0) {
-        updateConsoleDisplayWithError("Warning: Calibration data is empty. Using raw pressure values.");
+        updateConsoleDisplayWithError("[INT] Warning: Calibration data is empty. Using raw pressure values.");
         for (let i = 0; i < pressureValues.length; i++) {
             pressureValues[i] = pressureValues[i]*10;
         }
     } else if (calibrationData.length !== pressureValues.length) {
-        updateConsoleDisplayWithError("Warning: Mismatch in calibration data and pressure values length. Using raw pressure values.");
+        updateConsoleDisplayWithError("[INT] Warning: Mismatch in calibration data and pressure values length. Using raw pressure values.");
         for (let i = 0; i < pressureValues.length; i++) {
             pressureValues[i] = pressureValues[i]*10;
         }
@@ -135,12 +141,12 @@ function updatePressureData(pressureValues) {
     let bottomPressureData = bottomSensors.map(sensor => pressureValues[sensor]);
 
     if (topPressureData.length !== topCoordinates.length) {
-        updateConsoleDisplayWithError("Error: Mismatch in top pressure data and coordinates length.");
+        updateConsoleDisplayWithError("[INT] Error: Mismatch in top pressure data and coordinates length.");
         return;  // Exit the function early
     }
 
     if (bottomPressureData.length !== bottomCoordinates.length) {
-        updateConsoleDisplayWithError("Error: Mismatch in bottom pressure data and coordinates length.");
+        updateConsoleDisplayWithError("[INT] Error: Mismatch in bottom pressure data and coordinates length.");
         return;  // Exit the function early
     }
 
@@ -330,7 +336,7 @@ document.getElementById('makeDirectory').addEventListener('click', () => {
 
 // Event listener for the "Select Directory" button
 document.getElementById('selectDirectory').addEventListener('click', () => {
-    const dirName = document.getElementById('selectDirInput').value;
+    const dirName = document.getElementById('dirNameInput').value;
     const command = dirName ? `select_dir ${dirName}\n` : 'select_dir\n';
     ipcRenderer.send('send-serial-message', command);
 });

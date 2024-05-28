@@ -151,7 +151,7 @@ function loadDataSetPlaceholders() {
                 mainWindow.webContents.send('update-dataset-placeholders', dataSets);
             }
             if (fileSelectWindow) {
-                fileSelectWindow.webContents.send('initialize-dataSets', dataSets);
+                fileSelectWindow.webContents.send('initialize-dataSets');
             }
             if (replayWindow) {
                 replayWindow.webContents.send('update-datasets', dataSets);
@@ -165,6 +165,7 @@ let configWindow;
 let testingWindow;
 let replayWindow;
 let fileSelectWindow;
+let presetWindow;
 // let interval;
 let port;
 let dataSets = [];
@@ -352,7 +353,6 @@ ipcMain.on('update-custom-display', (event, { quadrantId, displayKey, displayTyp
         });
 });
 
-
 ipcMain.handle('get-serial-ports', async () => {
   try {
       const ports = await SerialPort.list();
@@ -426,8 +426,8 @@ ipcMain.on('toggle-replay-window', () => {
         replayWindow = null;
     } else {
         replayWindow = new BrowserWindow({
-            width: 1200,
-            height: 800,
+            width: 1000,
+            height: 700,
             webPreferences: {
                 preload: path.join(__dirname, 'preload.js'),
                 nodeIntegration: true,
@@ -639,15 +639,23 @@ ipcMain.on('request-preset', (event, id) => {
 
 // Manage Presets window
 ipcMain.on('open-preset-manager', () => {
-    const presetWindow = new BrowserWindow({
-        width: 700,
-        height: 800,
-        webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false
-        }
-    });
-    presetWindow.loadFile('src/presetManager.html'); // You need to create this HTML file for managing presets
+    if (presetWindow) {
+        presetWindow.close();
+        presetWindow = null;
+    } else {
+        presetWindow = new BrowserWindow({
+            width: 700,
+            height: 800,
+            webPreferences: {
+                nodeIntegration: true,
+                contextIsolation: false
+            }
+        });
+        presetWindow.loadFile('src/presetManager.html'); // You need to create this HTML file for managing presets
+        presetWindow.on('closed', () => {
+            presetWindow = null;
+        });
+    }
 });
 
 ipcMain.on('get-presets', (event) => {
@@ -754,10 +762,12 @@ function refreshPresets(event) {
         } else {
             event.reply('presets-response', rows);
             mainWindow.webContents.send('presets-response', rows);
+            if (fileSelectWindow) {
+                fileSelectWindow.webContents.send('presets-response', rows);
+            }
         }
     });
 }
-
 
 ipcMain.on('load-preset', (event, presetId) => {
     db.get(`SELECT * FROM parsingPresets WHERE id = ?`, [presetId], (err, row) => {
@@ -779,4 +789,6 @@ ipcMain.on('delete-preset', (event, presetId) => {
             mainWindow.webContents.send('presets-response', rows);
         }
     });
+    // Refresh the presets in the manager after saving
+    refreshPresets(event);
 });

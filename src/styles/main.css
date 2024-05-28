@@ -1,0 +1,150 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Prevent scrolling */
+    position: relative; /* Set as reference for absolute positioning */
+    height: 100vh;
+    width: 100vw;
+}
+.body2 {
+    display: grid;
+    grid-template-rows: 1fr 1.7fr;
+    height: 100%;
+}
+.top-section {
+    display: grid;
+    grid-template-columns: 3fr 3fr 4fr;
+    width: 100%; /* Ensures the grid container takes up the full width */
+    box-sizing: border-box; /* Includes padding and border in the element's total width and height */
+    min-height: 0;
+    max-height: 100%;
+    padding-top: 10px;
+}
+.big-display {
+    font-size: 150px; /* Adjust as needed */
+    font-weight: bold;
+    flex: 1;
+    text-align: center;
+} 
+.display-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.display-label {
+    font-size: 24px; /* Adjust as needed */
+    font-weight: bold;
+    margin-bottom: 10px; /* Space between the label and the big display */
+}
+.toggle-windows {
+    position: absolute;
+    display: block;
+    margin: 0 auto;
+    top: 0px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+.bottom-section {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    height: 100px;
+}
+.graph {
+    flex: 1;
+    background-color: #f4f4f4;
+    margin: 20px;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+.controls {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    height: 100%;
+}
+.directory-commands {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 5px;
+}
+.flight-test-commands {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 5px;
+}
+.command-section {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.command-section button {
+    margin-right: 10px;
+}
+#consoleDisplay {
+    width: 100%;
+    height: 100%;
+    max-height: 50vh; /* Limit the height of the console display */
+    max-width: 40vw; /* Limit the width of the console display */
+    overflow-y: auto; /* Allow vertical scrolling within the log */
+    resize: none; /* Prevent resizing of the textarea */
+    overflow-y: auto; background-color: #f3f3f3; border: 1px solid #ccc; padding: 5px; white-space: pre-wrap; font-family: monospace;
+}
+.sensor-inputs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between; /* Optional: To space out the columns */
+}
+.input-section {
+    margin-bottom: 2px;
+    flex-basis: calc(50% - 10px); /* Subtracting potential padding or margins */
+}
+.input-section label {
+    display: inline-block;
+    width: 100px;
+    font-size: 13px;
+}
+.input-section input {
+    width: 100px;
+}
+.chart-container {
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    max-height: 35vh;;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+.gps-displays {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0px; /* Add some space between this section and the chart below */
+}
+.gps-display, .hz-display {
+    font-size: 20px; /* You can adjust this font size */
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+.gps-label, .hz-label {
+    margin-right: 10px;
+    font-weight: bold;
+}
+.commands-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 95%;
+}
