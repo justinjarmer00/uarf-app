@@ -217,8 +217,13 @@ function startConnectionCheck() {
 }
 
 function updateConsoleDisplayWithEXTError(message) {
-    EXTmessage = "[EXT] " + message
+    const EXTmessage = "[EXT] " + message
     updateConsoleDisplayWithError(EXTmessage);
+}
+
+function updateConsoleDisplayEXT(message) {
+    const EXTmessage = "[EXT] " + message
+    updateConsoleDisplay(EXTmessage);
 }
 
 function updateGpsSpeedDisplay(value) {
@@ -239,7 +244,7 @@ function updateHzDisplay(value) {
 const handlers = {
     p: updateSpeedDisplay,
     a: updateAlphaDisplay,
-    console: updateConsoleDisplay,
+    console: updateConsoleDisplayEXT,
     merror: updateConsoleDisplayWithEXTError,
     pv: updatePressureData,
     calibration: updateCalibrationData,
